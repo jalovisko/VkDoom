@@ -73,7 +73,7 @@ private:
 	VulkanRenderDevice* fb = nullptr;
 
 	static const int MaxFixedSets = 100;
-	static const int MaxBindlessTextures = 16536;
+	int MaxBindlessTextures = 16536;
 	static const int FixedBindlessSlots = 3;
 	static const int MaxLightmaps = 128;
 

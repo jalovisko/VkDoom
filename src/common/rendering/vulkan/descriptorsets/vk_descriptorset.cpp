@@ -39,6 +39,9 @@
 #include "v_2ddrawer.h"
 #include "fcolormap.h"
 
+CVAR(Int, vk_max_bindless_textures, 16536, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
+
+
 VkDescriptorSetManager::VkDescriptorSetManager(VulkanRenderDevice* fb) : fb(fb)
 {
 	CreateLevelMeshLayout();
@@ -381,6 +384,10 @@ void VkDescriptorSetManager::CreateFixedPool()
 
 void VkDescriptorSetManager::CreateBindlessSet()
 {
+	const auto& limits = fb->GetDevice()->PhysicalDevice.Properties.Properties.limits;
+	uint32_t deviceMax = std::min(limits.maxDescriptorSetSampledImages, limits.maxPerStageDescriptorSampledImages);
+	MaxBindlessTextures = std::min((int)deviceMax, std::max(1, (int)vk_max_bindless_textures));
+
 	Bindless.Pool = DescriptorPoolBuilder()
 		.Flags(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT)
 		.AddPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MaxBindlessTextures)
@@ -435,7 +442,7 @@ int VkDescriptorSetManager::AllocBindlessSlot(int count)
 	else
 	{
 		if (Bindless.NextIndex + count > MaxBindlessTextures)
-			I_FatalError("Out of bindless texture slots!");
+			I_FatalError("Out of bindless texture slots! Try raising vk_max_bindless_textures (currently %d) and restarting.", MaxBindlessTextures);
 		int index = Bindless.NextIndex;
 		if (Bindless.AllocSizes.size() < index + count)
 			Bindless.AllocSizes.resize(index + count, 0);
